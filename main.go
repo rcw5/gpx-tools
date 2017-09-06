@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/rcw5/gpx-simplifier-cli/simplify"
 	"github.com/urfave/cli"
@@ -12,6 +14,7 @@ func main() {
 	var numFiles int
 	var pointsPerFile int
 	var filename string
+	var debug bool
 	app := cli.NewApp()
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
@@ -26,6 +29,11 @@ func main() {
 			Usage:       "Number of GPX trackpoints per file",
 			Destination: &pointsPerFile,
 		},
+		cli.BoolFlag{
+			Name:        "debug",
+			Usage:       "Enable debugging",
+			Destination: &debug,
+		},
 		cli.StringFlag{
 			Name:        "filename, f",
 			Usage:       "File to simplify",
@@ -34,18 +42,21 @@ func main() {
 	}
 	app.Name = "gpx-simplifier"
 	app.Usage = "Simplify (and split) GPX files"
-	app.Version = "0.0.1"
+	app.Version = "0.0.2"
 	app.Action = func(c *cli.Context) error {
+		if filename == "" {
+			return cli.NewExitError("ERROR: --filename must be specified", 1)
+		}
 		t, err := simplify.Load(filename)
 		if err != nil {
-			panic(err)
+			return cli.NewExitError(fmt.Sprintf("Error simplifying file: %s", err), 1)
 		}
 
 		tracks, _ := t.Split(numFiles)
-
 		for idx, track := range tracks {
 			track.Simplify(pointsPerFile)
-			err = track.Save(fmt.Sprintf("%s-part%d.gpx", filename, idx))
+			filenameNoExtension := strings.TrimSuffix(filename, filepath.Ext(filename))
+			err = track.Save(fmt.Sprintf("%s-part%d.gpx", filenameNoExtension, idx+1))
 			if err != nil {
 				panic(err)
 			}
