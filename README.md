@@ -14,19 +14,6 @@ GPSBAbel ^^^
  * at their new locations.
 
 
- I.e for points A, B, C, D, E
- 
- Calculate distance between AB and BC and sum
- Calculate distance between AC directly
- This is the XTE
-
- Repeat for BCD, CDE
-
- Sort the XTEs
- remove the smallest one.
- Recompute the neighbours
- Sort back into list.
- 
 
 
  
