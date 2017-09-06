@@ -1,0 +1,247 @@
+package simplify
+
+import (
+	"encoding/xml"
+	"fmt"
+	"io/ioutil"
+	"math"
+	"os"
+	"sort"
+
+	"github.com/golangplus/fmt"
+)
+
+type Track struct {
+	Creator     string       `xml:"creator,attr"`
+	Title       string       `xml:"trk>name"`
+	TrackPoints []TrackPoint `xml:"trk>trkseg>trkpt"`
+}
+
+type TrackPoint struct {
+	Lat float64 `xml:"lat,attr"`
+	Lon float64 `xml:"lon,attr"`
+}
+
+func Load(fileName string) (Track, error) {
+	if _, err := os.Stat(fileName); err != nil {
+		return Track{}, fmt.Errorf("%s does not exist", fileName)
+	}
+
+	xmlFile, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return Track{}, fmt.Errorf("Error reading %s: %s", fileName, err)
+	}
+
+	var track Track
+	xml.Unmarshal(xmlFile, &track)
+
+	//fmt.Println("Read the file!")
+	//fmt.Printf("%#v", track)
+	return track, nil
+}
+
+/*
+type xte2 struct {
+	trackpoint TrackPoint
+	ordinal    int
+	xte        float64
+	next       *xte2
+	prev       *xte2
+}
+
+func Simplify2(theTrack Track, maxPoints int) Track {
+	//Build XTE Linked List
+	var head, prev *xte2
+	for i, v := range theTrack.TrackPoints {
+		if head == nil {
+			xte := xte2{trackpoint: v, ordinal: i, prev: nil}
+			head = &xte
+			prev = head
+		} else {
+			prev.next = &xte2{trackpoint: v, ordinal: i, xte: 0, prev: prev}
+			prev.xte = calculateXte2(*prev)
+			prev = prev.next
+		}
+	}
+	prev.xte = calculateXte2(*prev)
+
+	//Remove trackPoint from original track and xte LL
+
+	//Recalculate XTE for prev and next and reinsert into the linked list
+
+	//Return the simplified track
+	return Track{}
+}
+
+func lowestXte(head *xte2) *xte2 {
+	var lowest *xte2
+	for e := head; e != nil; e = e.next {
+		if lowest == nil {
+			lowest = e
+		} else if e.xte < lowest.xte {
+			lowest = e
+		}
+	}
+}
+
+func calculateXte2(xte2 xte2) float64 {
+	if xte2.prev == nil || xte2.next == nil {
+		return math.MaxFloat64
+	}
+	a := xte2.prev.trackpoint
+	b := xte2.trackpoint
+	c := xte2.next.trackpoint
+	aTob := distance(a.Lat, a.Lon, b.Lat, b.Lon)
+	aToc := distance(a.Lat, a.Lon, c.Lat, c.Lon)
+	bToc := distance(b.Lat, b.Lon, c.Lat, c.Lon)
+
+	area := area(aTob, aToc, bToc)
+	xte := height(aToc, area)
+	return xte
+}
+*/
+
+type xte struct {
+	trackpoint TrackPoint
+	index      int
+	xte        float64
+	removed    bool
+}
+
+type xtes []xte
+
+func (slice xtes) Len() int {
+	return len(slice)
+}
+
+func (slice xtes) Less(i, j int) bool {
+	return slice[i].xte < slice[j].xte
+}
+
+func (slice xtes) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
+
+func Simplify(theTrack Track, numPoints int) (Track, error) {
+
+	fmtp.Printfln("Thetrack has %d points", len(theTrack.TrackPoints))
+
+	/* To simplify a track:
+	1. Calculate the xte for each point
+	2. Sort by XTE
+	3. Loop over this collection
+		a. Remove lowest XTE
+		b. Recalculate XTE of previous and next points
+
+	3. Remove the first 'n' of these results from the original track, by setting val to nil
+	4. Rebuild original track ignoring nil trackpoints
+
+	*/
+
+	if len(theTrack.TrackPoints) <= numPoints {
+		return theTrack, nil
+	}
+
+	var simplifiedTrack xtes
+	//Loop through all Trackpoints calculating the XTE for each point
+	for idx, val := range theTrack.TrackPoints {
+		var xteForTrackPoint float64
+		if idx == 0 || idx == len(theTrack.TrackPoints)-1 {
+			xteForTrackPoint = math.MaxFloat64
+		} else {
+			//fmt.Println("Idx: ", idx)
+			prev := theTrack.TrackPoints[idx-1]
+			curr := theTrack.TrackPoints[idx]
+			next := theTrack.TrackPoints[idx+1]
+			xteForTrackPoint = calculateXte(prev, curr, next)
+		}
+		xte := xte{xte: xteForTrackPoint, trackpoint: val, index: idx}
+		simplifiedTrack = append(simplifiedTrack, xte)
+	}
+
+	var removedPoints int
+	pointsToRemove := int(math.Abs(float64(numPoints - len(simplifiedTrack))))
+	fmtp.Printfln("Got to remove %d points", pointsToRemove)
+	for removedPoints < pointsToRemove {
+		var sortedTrack = make(xtes, len(simplifiedTrack))
+		copy(sortedTrack, simplifiedTrack)
+		sort.Sort(sortedTrack)
+		//fmtp.Printfln("%+v", sortedTrack)
+		lowestXte := sortedTrack[0]
+		i := lowestXte.index
+		//fmtp.Printfln("Removing trackpoint index %d with xte %f", i, lowestXte.xte)
+		simplifiedTrack[i].xte = math.MaxFloat64
+		simplifiedTrack[i].removed = true
+		//fmtp.Printfln("%+v", simplifiedTrack[i])
+
+		// if i-1 > 0 {
+		// 	simplifiedTrack[i-1].xte = calculateXte(simplifiedTrack[i-2].trackpoint, simplifiedTrack[i-1].trackpoint, simplifiedTrack[i+1].trackpoint)
+		// }
+		// if i < len(simplifiedTrack)-1 {
+		// 	simplifiedTrack[i+1].xte = calculateXte(simplifiedTrack[i-1].trackpoint, simplifiedTrack[i+1].trackpoint, simplifiedTrack[i+2].trackpoint)
+		// }
+		removedPoints++
+	}
+
+	// Turn simplfiedtrack back into a track
+	var trackpoints []TrackPoint
+	for _, x := range simplifiedTrack {
+		if !x.removed {
+			trackpoints = append(trackpoints, TrackPoint{Lat: x.trackpoint.Lat, Lon: x.trackpoint.Lon})
+		}
+	}
+	theTrack.TrackPoints = trackpoints
+	return theTrack, nil
+}
+
+func calculateXte(a, b, c TrackPoint) float64 {
+	aTob := distance(a.Lat, a.Lon, b.Lat, b.Lon)
+	aToc := distance(a.Lat, a.Lon, c.Lat, c.Lon)
+	bToc := distance(b.Lat, b.Lon, c.Lat, c.Lon)
+
+	area := area(aTob, aToc, bToc)
+	xte := height(aToc, area)
+	return xte
+}
+
+func height(base, area float64) float64 {
+	return 2 * (area / base)
+}
+
+//heron's formula: http://www.mathopenref.com/heronsformula.html
+func area(aTob, aToc, bToc float64) float64 {
+	p := (aTob + aToc + bToc) / 2
+	return math.Sqrt(p * (p - aTob) * (p - aToc) * (p - bToc))
+}
+
+//Taken from https://gist.github.com/cdipaolo/d3f8db3848278b49db68
+// haversin(θ) function
+func hsin(theta float64) float64 {
+	return math.Pow(math.Sin(theta/2), 2)
+}
+
+// Distance function returns the distance (in meters) between two points of
+//     a given longitude and latitude relatively accurately (using a spherical
+//     approximation of the Earth) through the Haversin Distance Formula for
+//     great arc distance on a sphere with accuracy for small distances
+//
+// point coordinates are supplied in degrees and converted into rad. in the func
+//
+// distance returned is METERS!!!!!!
+// http://en.wikipedia.org/wiki/Haversine_formula
+func distance(lat1, lon1, lat2, lon2 float64) float64 {
+	// convert to radians
+	// must cast radius as float to multiply later
+	var la1, lo1, la2, lo2, r float64
+	la1 = lat1 * math.Pi / 180
+	lo1 = lon1 * math.Pi / 180
+	la2 = lat2 * math.Pi / 180
+	lo2 = lon2 * math.Pi / 180
+
+	r = 6378100 // Earth radius in METERS
+
+	// calculate
+	h := hsin(la2-la1) + math.Cos(la1)*math.Cos(la2)*hsin(lo2-lo1)
+
+	return math.Abs(2 * r * math.Asin(math.Sqrt(h)))
+}
