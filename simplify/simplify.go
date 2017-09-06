@@ -148,7 +148,7 @@ func (track *Track) Simplify(numPoints int) {
 
 	//Remove smallest from thetrack
 	pointsToRemove := int(math.Abs(float64(numPoints - len(track.TrackPoints))))
-	for i := 0; i <= pointsToRemove; i++ {
+	for i := 0; i < pointsToRemove; i++ {
 		// printList(list)
 		lowestElem := list[0]
 
