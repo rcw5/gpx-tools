@@ -14,7 +14,6 @@ func main() {
 	var numFiles int
 	var pointsPerFile int
 	var filename string
-	var debug bool
 	app := cli.NewApp()
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
@@ -29,18 +28,13 @@ func main() {
 			Usage:       "Number of GPX trackpoints per file",
 			Destination: &pointsPerFile,
 		},
-		cli.BoolFlag{
-			Name:        "debug",
-			Usage:       "Enable debugging",
-			Destination: &debug,
-		},
 		cli.StringFlag{
 			Name:        "filename, f",
 			Usage:       "File to simplify",
 			Destination: &filename,
 		},
 	}
-	app.Name = "gpx-simplifier"
+	app.Name = "gpx-simplifier-cli"
 	app.Usage = "Simplify (and split) GPX files"
 	app.Version = "0.0.2"
 	app.Action = func(c *cli.Context) error {
@@ -51,12 +45,15 @@ func main() {
 		if err != nil {
 			return cli.NewExitError(fmt.Sprintf("Error simplifying file: %s", err), 1)
 		}
+		fmt.Println(fmt.Sprintf("Simplifying %s to %d files, %d points per file", filename, numFiles, pointsPerFile))
 
-		tracks, _ := t.Split(numFiles)
+		tracks := t.SplitInto(numFiles)
 		for idx, track := range tracks {
-			track.Simplify(pointsPerFile)
+			track.SimplifyTo(pointsPerFile)
 			filenameNoExtension := strings.TrimSuffix(filename, filepath.Ext(filename))
-			err = track.Save(fmt.Sprintf("%s-part%d.gpx", filenameNoExtension, idx+1))
+			fullFileName := fmt.Sprintf("%s-part%d.gpx", filenameNoExtension, idx+1)
+			err = track.Save(fullFileName)
+			fmt.Println(fmt.Sprintf("Written: %s", fullFileName))
 			if err != nil {
 				panic(err)
 			}
