@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+  <gpx version="1.0" creator="gpx-tools"
+	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	  xmlns="http://www.topografix.com/GPX/1/0"
+	  xsi:schemaLocation="http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd">
+    <trk>
+      <name>Sample Track</name>
+      <trkseg>
+        <trkpt lat="1.000000" lon="1.000000" />
+        <trkpt lat="3.000000" lon="3.000000" />
+        <trkpt lat="5.000000" lon="5.000000" />
+        <trkpt lat="7.000000" lon="7.000000" />
+        <trkpt lat="9.000000" lon="9.000000" />
+        <trkpt lat="11.000000" lon="11.000000" />
+        <trkpt lat="13.000000" lon="13.000000" />
+        <trkpt lat="15.000000" lon="15.000000" />
+        <trkpt lat="17.000000" lon="17.000000" />
+        <trkpt lat="20.000000" lon="20.000000" />
+        </trkseg>
+      </trk>
+    </gpx>

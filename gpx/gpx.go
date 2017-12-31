@@ -1,13 +1,9 @@
-package simplify
+package gpx
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"math"
-	"os"
 
 	"github.com/golangplus/fmt"
 )
@@ -32,18 +28,12 @@ type xteRec struct {
 }
 
 //Load a GPX file into a Track
-func Load(fileName string) (Track, error) {
-	if _, err := os.Stat(fileName); err != nil {
-		return Track{}, fmt.Errorf("%s does not exist", fileName)
-	}
-
-	xmlFile, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		return Track{}, fmt.Errorf("Error reading %s: %s", fileName, err)
-	}
-
+func Load(trackDefinition string) (Track, error) {
 	var track Track
-	xml.Unmarshal(xmlFile, &track)
+	err := xml.Unmarshal([]byte(trackDefinition), &track)
+	if err != nil {
+		return track, err
+	}
 	return track, nil
 }
 
@@ -71,48 +61,22 @@ func (track *Track) SplitInto(numFiles int) []Track {
 }
 
 //Save saves the track definition to a file
-func (track *Track) Save(filename string) error {
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	w := bufio.NewWriter(f)
-	var buffer bytes.Buffer
-	header := `<?xml version="1.0"?>
-	<gpx version="1.0" creator="gpx-simplifier-cli"
+func (track *Track) ToXML() string {
+	gpx := fmt.Sprintf(`<?xml version="1.0"?>
+	<gpx version="1.0" creator="gpx-tools"
 	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	  xmlns="http://www.topografix.com/GPX/1/0"
 	  xsi:schemaLocation="http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd">
 	  <trk>
 		<name>%s</name>
-		<trkseg>`
-	_, err = buffer.WriteString(fmt.Sprintf(header, track.Title))
-	if err != nil {
-		return err
-	}
+		<trkseg>`, track.Title)
 	for _, val := range track.TrackPoints {
-		trackPoint := fmt.Sprintf("<trkpt lat=\"%f\" lon=\"%f\" />\n", val.Lat, val.Lon)
-		buffer.WriteString(trackPoint)
+		gpx += fmt.Sprintf("<trkpt lat=\"%f\" lon=\"%f\" />\n", val.Lat, val.Lon)
 	}
-	footer := `    </trkseg>
+	gpx += `</trkseg>
 	</trk>
-  </gpx>`
-	buffer.WriteString(footer)
-	if err != nil {
-		return err
-	}
-
-	_, err = w.WriteString(buffer.String())
-	if err != nil {
-		return err
-	}
-	err = w.Flush()
-	if err != nil {
-		return err
-	}
-	return nil
+	</gpx>`
+	return gpx
 }
 
 //SimplifyTo simplifies a track into a certain number of points

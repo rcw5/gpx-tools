@@ -11,33 +11,25 @@ This is useful for owners of Garmin GPX devices which have been known to truncat
 
 ## How do I use it?
 
-    NAME:
-    gpx-simplifier-cli - Simplify (and split) GPX files
+```
+NAME:
+  gpx-tools - Simple suite of tools to manipulate GPX files
 
-    USAGE:
-    gpx-simplifier-cli [global options] command [command options] [arguments...]
+USAGE:
+  gpx-tools [global options] command [command options] [arguments...]
 
-    VERSION:
-    0.0.2
+VERSION:
+  0.0.3
 
-    COMMANDS:
-        help, h  Shows a list of commands or help for one command
+COMMANDS:
+    simplify, sim  Simplify a GPX File
+    split, spl     Split a GPX file into a number of smaller files
+    help, h        Shows a list of commands or help for one command
 
-    GLOBAL OPTIONS:
-    --number-of-files value, -n value  Number of smaller files to split the larger file into (default: 1)
-    --points-per-file value, -p value  Number of GPX trackpoints per file (default: 1000)
-    --filename value, -f value         File to simplify
-    --help, -h                         show help
-    --version, -v                      print the version
-
-The split/simplified files are based on the file name of the original track, e.g.
-
-    ./gpx-simplifier-cli -f test/My_Track.gpx -n 3 -p 500
-
-    Simplifying test/My_Track.gpx to 3 files, 500 points per file
-    Written: test/My_Track-part1.gpx
-    Written: test/My_Track-part2.gpx
-    Written: test/My_Track-part3.gpx
+GLOBAL OPTIONS:
+  --help, -h     show help
+  --version, -v  print the version
+```
 
 ## How does it work?
 

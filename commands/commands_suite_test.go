@@ -1,4 +1,4 @@
-package simplify_test
+package commands_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -9,5 +9,5 @@ import (
 
 func TestSimplify(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Simplify Suite")
+	RunSpecs(t, "Commands Suite")
 }
